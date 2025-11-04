@@ -21,6 +21,7 @@ namespace OrangeHRM\Buzz\Controller;
 use OrangeHRM\Core\Vue\Prop;
 use OrangeHRM\Core\Vue\Component;
 use OrangeHRM\Framework\Http\Request;
+use OrangeHRM\Framework\Http\RedirectResponse;
 use OrangeHRM\Core\Traits\Auth\AuthUserTrait;
 use OrangeHRM\Core\Controller\AbstractVueController;
 use OrangeHRM\Pim\Traits\Service\EmployeeServiceTrait;
@@ -29,6 +30,16 @@ class BuzzController extends AbstractVueController
 {
     use AuthUserTrait;
     use EmployeeServiceTrait;
+
+
+    // Here I want to redirect to the dashboard index page
+    /**
+     * @inheritDoc
+     */
+    public function handle(Request $request): RedirectResponse
+    {
+        return $this->redirect('/dashboard/index');
+    }
 
     public function preRender(Request $request): void
     {

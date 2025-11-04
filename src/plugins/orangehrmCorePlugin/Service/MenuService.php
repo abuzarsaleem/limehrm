@@ -178,7 +178,15 @@ class MenuService
         $normalizedSidePanelMenuItems = [];
         $selectedSidePanelMenuId = null;
 
+        // Menu items to exclude from sidebar
+        $excludedMenuTitles = ['Maintenance', 'Claim', 'Buzz'];
+
         foreach ($detailedSidePanelMenuItems as $detailedSidePanelMenuItem) {
+            // Skip excluded menu items
+            if (in_array($detailedSidePanelMenuItem->getMenuTitle(), $excludedMenuTitles)) {
+                continue;
+            }
+
             $active = false;
             if (is_null($selectedSidePanelMenuId) && $active = $this->isActiveSidePanelMenuItem(
                 $detailedSidePanelMenuItem,
