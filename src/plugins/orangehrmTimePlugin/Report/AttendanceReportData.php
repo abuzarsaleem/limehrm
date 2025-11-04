@@ -54,10 +54,45 @@ class AttendanceReportData implements ReportData
         $result = [];
         foreach ($employeeAttendanceRecords as $employeeAttendanceRecord) {
             $termination = $employeeAttendanceRecord['terminationId'];
+            $punchInTime = $employeeAttendanceRecord['firstPunchIn'] ?? null;
+            $punchOutTime = $employeeAttendanceRecord['lastPunchOut'] ?? null;
+            
+            // Format punch in time
+            $punchInFormatted = '';
+            if ($punchInTime instanceof \DateTime) {
+                $punchInFormatted = $punchInTime->format('H:i:s');
+            } elseif ($punchInTime) {
+                if (is_string($punchInTime)) {
+                    // Handle datetime string format (YYYY-MM-DD HH:MM:SS)
+                    if (strlen($punchInTime) >= 19) {
+                        $punchInFormatted = substr($punchInTime, 11, 8);
+                    } else {
+                        $punchInFormatted = $punchInTime;
+                    }
+                }
+            }
+            
+            // Format punch out time
+            $punchOutFormatted = '';
+            if ($punchOutTime instanceof \DateTime) {
+                $punchOutFormatted = $punchOutTime->format('H:i:s');
+            } elseif ($punchOutTime) {
+                if (is_string($punchOutTime)) {
+                    // Handle datetime string format (YYYY-MM-DD HH:MM:SS)
+                    if (strlen($punchOutTime) >= 19) {
+                        $punchOutFormatted = substr($punchOutTime, 11, 8);
+                    } else {
+                        $punchOutFormatted = $punchOutTime;
+                    }
+                }
+            }
+            
             $result[] = [
                 AttendanceReport::PARAMETER_EMPLOYEE_NAME => $termination === null ? $employeeAttendanceRecord['fullName'] : $employeeAttendanceRecord['fullName'] . ' ' . $this->getI18NHelper()->transBySource('(Past Employee)'),
                 AttendanceReport::PARAMETER_TIME => $this->getNumberHelper()
-                    ->numberFormat((float)$employeeAttendanceRecord['total'] / 3600, 2)
+                    ->numberFormat((float)$employeeAttendanceRecord['total'] / 3600, 2),
+                AttendanceReport::PARAMETER_PUNCH_IN => $punchInFormatted,
+                AttendanceReport::PARAMETER_PUNCH_OUT => $punchOutFormatted,
             ];
         }
 

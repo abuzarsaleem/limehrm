@@ -335,7 +335,9 @@ class AttendanceDao extends BaseDao
             'CONCAT(employee.firstName, \' \', employee.lastName) AS fullName',
             'IDENTITY(employee.employeeTerminationRecord) AS terminationId',
             'employee.empNumber as empNumber',
-            "SUM(TIME_DIFF(COALESCE(attendanceRecord.punchOutUtcTime, 0), COALESCE(attendanceRecord.punchInUtcTime, 0),'second')) AS total"
+            "SUM(TIME_DIFF(COALESCE(attendanceRecord.punchOutUtcTime, 0), COALESCE(attendanceRecord.punchInUtcTime, 0),'second')) AS total",
+            'MIN(attendanceRecord.punchInUserTime) AS firstPunchIn',
+            'MAX(attendanceRecord.punchOutUserTime) AS lastPunchOut'
         );
         $q->groupBy('employee.empNumber');
         return $this->getPaginator($q);

@@ -23,7 +23,7 @@
     name="attendance"
     :prefetch="false"
     :filters="serializedFilters"
-    :column-count="2"
+    :column-count="4"
   >
     <template #default="{generateReport}">
       <oxd-table-filter
