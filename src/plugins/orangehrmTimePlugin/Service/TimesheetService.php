@@ -121,28 +121,67 @@ class TimesheetService
                 $timesheetColumns[$date] = new TimesheetColumn($timesheetDate);
             }
         }
+        
+        // Group items by project/activity, but create separate rows when items have the same date
+        // to support multiple rows with same project/activity
+        $itemsByRowKey = [];
         foreach ($timesheetItems as $timesheetItem) {
             $projectId = $timesheetItem->getProject()->getId();
             $projectActivityId = $timesheetItem->getProjectActivity()->getId();
-            $timesheetRowKey = "{$projectId}_{$projectActivityId}";
-            if (!isset($timesheetRows[$timesheetRowKey])) {
-                $timesheetRows[$timesheetRowKey] = new TimesheetRow(
-                    $timesheetItem->getProject(),
-                    $timesheetItem->getProjectActivity(),
-                    $timesheetDates
-                );
+            $date = $this->getDateTimeHelper()->formatDateTimeToYmd($timesheetItem->getDate());
+            
+            // Create a unique key that includes the item ID to allow multiple rows with same project/activity/date
+            // If an item already exists for this project/activity/date, use the item ID to create a separate row
+            $baseRowKey = "{$projectId}_{$projectActivityId}";
+            $rowKey = $baseRowKey;
+            $rowIndex = 0;
+            
+            // Check if we need to create a separate row (if date already assigned in existing row)
+            while (isset($itemsByRowKey[$rowKey]) && isset($itemsByRowKey[$rowKey][$date])) {
+                // Date already exists in this row, try next row
+                $rowIndex++;
+                $rowKey = "{$baseRowKey}_{$rowIndex}";
             }
-
-            if (!is_null($timesheetItem->getDuration())) {
-                $timesheetRows[$timesheetRowKey]->incrementTotal($timesheetItem->getDuration());
-
-                $date = $this->getDateTimeHelper()->formatDateTimeToYmd($timesheetItem->getDate());
-                if ($timesheetColumns[$date] instanceof TimesheetColumn) {
-                    $timesheetColumns[$date]->incrementTotal($timesheetItem->getDuration());
-                }
+            
+            if (!isset($itemsByRowKey[$rowKey])) {
+                $itemsByRowKey[$rowKey] = [];
             }
-            $timesheetRows[$timesheetRowKey]->assignTimesheetItem($timesheetItem);
+            $itemsByRowKey[$rowKey][$date] = $timesheetItem;
         }
+        
+        // Create TimesheetRow objects from grouped items
+        foreach ($itemsByRowKey as $rowKey => $itemsByDate) {
+            // Get project and activity from first item
+            $firstItem = reset($itemsByDate);
+            $projectId = $firstItem->getProject()->getId();
+            $projectActivityId = $firstItem->getProjectActivity()->getId();
+            
+            $timesheetRow = new TimesheetRow(
+                $firstItem->getProject(),
+                $firstItem->getProjectActivity(),
+                $timesheetDates
+            );
+            
+            foreach ($itemsByDate as $date => $timesheetItem) {
+                if (!is_null($timesheetItem->getDuration())) {
+                    $timesheetRow->incrementTotal($timesheetItem->getDuration());
+                    if ($timesheetColumns[$date] instanceof TimesheetColumn) {
+                        $timesheetColumns[$date]->incrementTotal($timesheetItem->getDuration());
+                    }
+                }
+                // Use reflection or direct assignment to bypass the duplicate check
+                // since we've already handled grouping above
+                $reflection = new \ReflectionClass($timesheetRow);
+                $datesProperty = $reflection->getProperty('dates');
+                $datesProperty->setAccessible(true);
+                $dates = $datesProperty->getValue($timesheetRow);
+                $dates[$date] = $timesheetItem;
+                $datesProperty->setValue($timesheetRow, $dates);
+            }
+            
+            $timesheetRows[$rowKey] = $timesheetRow;
+        }
+        
         return [$timesheetRows, $timesheetColumns];
     }
 
@@ -207,12 +246,20 @@ class TimesheetService
                     throw new LogicException('`duration` required attribute');
                 }
                 $date = new DateTime($date);
-                $itemKey = $this->generateTimesheetItemKey(
-                    $timesheet->getId(),
-                    $row['projectId'],
-                    $row['activityId'],
-                    $date
-                );
+                
+                // Use item ID as key if provided, otherwise use generated key
+                // This allows us to match existing items correctly when multiple items
+                // have the same project/activity/date combination
+                $itemId = isset($dateValue['id']) && $dateValue['id'] > 0 ? (int)$dateValue['id'] : null;
+                $itemKey = $itemId !== null 
+                    ? 'id_' . $itemId 
+                    : $this->generateTimesheetItemKey(
+                        $timesheet->getId(),
+                        $row['projectId'],
+                        $row['activityId'],
+                        $date
+                    );
+                
                 $timesheetItem = new TimesheetItem();
                 $timesheetItem->setTimesheet($timesheet);
                 $timesheetItem->setEmployee($timesheet->getEmployee());
@@ -220,6 +267,11 @@ class TimesheetService
                 $timesheetItem->getDecorator()->setProjectActivityById($row['activityId']);
                 $timesheetItem->setDate($date);
                 $timesheetItem->setDuration(strtotime($dateValue['duration']) - strtotime('TODAY'));
+                
+                // Store item ID separately for matching in DAO
+                // We'll use reflection to temporarily store it, or pass it as metadata
+                $timesheetItem->itemIdForMatching = $itemId;
+                
                 $timesheetItems[$itemKey] = $timesheetItem;
             }
         }

@@ -70,8 +70,7 @@ export interface UpdatedEntry {
 }
 
 export interface DeletedEntry {
-  projectId: number;
-  activityId: number;
+  id: number;
 }
 
 export interface Dates {

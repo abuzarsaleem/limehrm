@@ -217,36 +217,37 @@ class TimesheetDao extends BaseDao
 
     /**
      * @param int $timesheetId
-     * @param array $rows e.g. array(['projectId' => 1, 'activityId' => 2], ['projectId' => 1, 'activityId' => 3])
+     * @param array $entryIds e.g. array([1], [2], [3]) or array(['id' => 1], ['id' => 2]) or array(1, 2, 3)
      * @return int
      */
-    public function deleteTimesheetRows(int $timesheetId, array $rows): int
+    public function deleteTimesheetRows(int $timesheetId, array $entryIds): int
     {
-        if (empty($rows)) {
+        if (empty($entryIds)) {
             return 0;
         }
-        $q = $this->createQueryBuilder(TimesheetItem::class, 'ti')
-            ->delete();
-        foreach ($rows as $i => $row) {
-            if (!(isset($row['projectId']) && isset($row['activityId']))) {
-                throw new LogicException('`projectId` & `activityId` required attributes');
+        
+        // Extract entry IDs from various formats (integer, array with 'id' key)
+        $ids = [];
+        foreach ($entryIds as $entry) {
+            if (is_numeric($entry) && $entry > 0) {
+                $ids[] = (int)$entry;
+            } elseif (is_array($entry) && isset($entry['id']) && is_numeric($entry['id']) && $entry['id'] > 0) {
+                $ids[] = (int)$entry['id'];
             }
-            $timesheetIdParamKey = 'timesheetId_' . $i;
-            $projectIdParamKey = 'projectId_' . $i;
-            $activityIdParamKey = 'activityId_' . $i;
-            $q->orWhere(
-                $q->expr()->andX(
-                    $q->expr()->eq('ti.timesheet', ':' . $timesheetIdParamKey),
-                    $q->expr()->eq('ti.project', ':' . $projectIdParamKey),
-                    $q->expr()->eq('ti.projectActivity', ':' . $activityIdParamKey)
-                )
-            );
-            $q->setParameter($timesheetIdParamKey, $timesheetId)
-                ->setParameter($projectIdParamKey, $row['projectId'])
-                ->setParameter($activityIdParamKey, $row['activityId']);
         }
-
-        return $q->getQuery()->execute();
+        
+        if (empty($ids)) {
+            return 0;
+        }
+        
+        $q = $this->createQueryBuilder(TimesheetItem::class, 'ti');
+        return $q->delete()
+            ->where($q->expr()->eq('ti.timesheet', ':timesheetId'))
+            ->andWhere($q->expr()->in('ti.id', ':entryIds'))
+            ->setParameter('timesheetId', $timesheetId)
+            ->setParameter('entryIds', $ids)
+            ->getQuery()
+            ->execute();
     }
 
     /**
@@ -254,63 +255,138 @@ class TimesheetDao extends BaseDao
      */
     public function saveAndUpdateTimesheetItems(array $timesheetItems): void
     {
-        $q = $this->createQueryBuilder(TimesheetItem::class, 'ti');
+        if (empty($timesheetItems)) {
+            return;
+        }
 
-        $timesheetRowKeys = [];
-        foreach (array_values($timesheetItems) as $i => $timesheetItem) {
-            $timesheetIdParamKey = 'timesheetId_' . $i;
-            $projectIdParamKey = 'projectId_' . $i;
-            $activityIdParamKey = 'activityId_' . $i;
-
+        // First, collect all item IDs that need to be looked up
+        $itemIdsToQuery = [];
+        $itemsByDate = [];
+        $uniqueItemKeys = [];
+        
+        foreach (array_values($timesheetItems) as $timesheetItem) {
             /** @var TimesheetItem $timesheetItem */
             $timesheetId = $timesheetItem->getTimesheet()->getId();
             $projectId = $timesheetItem->getProject()->getId();
             $activityId = $timesheetItem->getProjectActivity()->getId();
+            
             if ($timesheetItem->getProjectActivity()->getProject()->getId() !== $projectId) {
                 throw new LogicException(
                     "The project activity (id: $activityId) not belongs to provided project (id: $projectId)"
                 );
             }
-            $timesheetRowKey = $timesheetId . '_' . $projectId . '_' . $activityId;
-            if (isset($timesheetRowKeys[$timesheetRowKey])) {
-                continue;
+            
+            // Check if item has an ID for matching
+            $itemId = property_exists($timesheetItem, 'itemIdForMatching') 
+                ? $timesheetItem->itemIdForMatching 
+                : null;
+            
+            if ($itemId !== null && $itemId > 0) {
+                $itemIdsToQuery[] = $itemId;
             }
-            $timesheetRowKeys[$timesheetRowKey] = [$timesheetId, $projectId, $activityId];
 
-            // Executing where clause only depend on `timesheet_id`, `project_id`, `activity_id`,
-            // No point of adding `date` also
+            // Generate unique key for this item (includes date)
+            $itemKey = $this->getTimesheetService()->generateTimesheetItemKey(
+                $timesheetId,
+                $projectId,
+                $activityId,
+                $timesheetItem->getDate()
+            );
+
+            // Only add query condition if we haven't processed this exact item key yet
+            if (!isset($uniqueItemKeys[$itemKey])) {
+                $uniqueItemKeys[$itemKey] = true;
+                $itemsByDate[] = [
+                    'timesheetId' => $timesheetId,
+                    'projectId' => $projectId,
+                    'activityId' => $activityId,
+                    'date' => $timesheetItem->getDate(),
+                ];
+            }
+        }
+        
+        // Build query to find all existing items
+        $q = $this->createQueryBuilder(TimesheetItem::class, 'ti');
+        $paramIndex = 0;
+        
+        // First, query by IDs if any are provided
+        if (!empty($itemIdsToQuery)) {
+            $q->orWhere($q->expr()->in('ti.id', ':itemIds'));
+            $q->setParameter('itemIds', $itemIdsToQuery);
+        }
+        
+        // Then, add date-based queries
+        foreach ($itemsByDate as $itemData) {
+            $timesheetIdParamKey = 'timesheetId_' . $paramIndex;
+            $projectIdParamKey = 'projectId_' . $paramIndex;
+            $activityIdParamKey = 'activityId_' . $paramIndex;
+            $dateParamKey = 'date_' . $paramIndex;
+
+            // Query includes date to properly match items when multiple rows have same project/activity
             $q->orWhere(
                 $q->expr()->andX(
                     $q->expr()->eq('ti.timesheet', ':' . $timesheetIdParamKey),
                     $q->expr()->eq('ti.project', ':' . $projectIdParamKey),
                     $q->expr()->eq('ti.projectActivity', ':' . $activityIdParamKey),
+                    $q->expr()->eq('ti.date', ':' . $dateParamKey)
                 )
             );
-            $q->setParameter($timesheetIdParamKey, $timesheetId)
-                ->setParameter($projectIdParamKey, $projectId)
-                ->setParameter($activityIdParamKey, $activityId);
+            $q->setParameter($timesheetIdParamKey, $itemData['timesheetId'])
+                ->setParameter($projectIdParamKey, $itemData['projectId'])
+                ->setParameter($activityIdParamKey, $itemData['activityId'])
+                ->setParameter($dateParamKey, $itemData['date']);
+            
+            $paramIndex++;
         }
 
         /** @var array<string, TimesheetItem> $updatableTimesheetItems */
         $updatableTimesheetItems = [];
-        foreach ($q->getQuery()->execute() as $updatableTimesheetItem) {
-            $itemKey = $this->getTimesheetService()->generateTimesheetItemKey(
-                $updatableTimesheetItem->getTimesheet()->getId(),
-                $updatableTimesheetItem->getProject()->getId(),
-                $updatableTimesheetItem->getProjectActivity()->getId(),
-                $updatableTimesheetItem->getDate()
-            );
-            $updatableTimesheetItems[$itemKey] = $updatableTimesheetItem;
+        if ($paramIndex > 0 || !empty($itemIdsToQuery)) {
+            foreach ($q->getQuery()->execute() as $updatableTimesheetItem) {
+                $itemId = $updatableTimesheetItem->getId();
+                // Store by ID for direct lookup
+                $updatableTimesheetItems['id_' . $itemId] = $updatableTimesheetItem;
+                // Also store by generated key for fallback matching
+                $itemKey = $this->getTimesheetService()->generateTimesheetItemKey(
+                    $updatableTimesheetItem->getTimesheet()->getId(),
+                    $updatableTimesheetItem->getProject()->getId(),
+                    $updatableTimesheetItem->getProjectActivity()->getId(),
+                    $updatableTimesheetItem->getDate()
+                );
+                if (!isset($updatableTimesheetItems[$itemKey])) {
+                    $updatableTimesheetItems[$itemKey] = $updatableTimesheetItem;
+                }
+            }
         }
 
         foreach ($timesheetItems as $key => $timesheetItem) {
-            if (isset($updatableTimesheetItems[$key])) {
-                $updatableTimesheetItems[$key]->setDuration($timesheetItem->getDuration());
-                // update
-                $this->getEntityManager()->persist($updatableTimesheetItems[$key]);
+            // Check if item has an ID stored for matching (from frontend)
+            $itemId = property_exists($timesheetItem, 'itemIdForMatching') 
+                ? $timesheetItem->itemIdForMatching 
+                : null;
+            $existingItem = null;
+            
+            if ($itemId !== null && $itemId > 0) {
+                // Try to find by ID first (most reliable for matching existing items)
+                $existingItem = $updatableTimesheetItems['id_' . $itemId] ?? null;
+            }
+            
+            // Fallback to key-based matching if ID-based matching failed
+            if (!$existingItem && isset($updatableTimesheetItems[$key])) {
+                $existingItem = $updatableTimesheetItems[$key];
+            }
+            
+            if ($existingItem) {
+                // Update existing item - preserve comment if new item doesn't have one
+                $existingItem->setDuration($timesheetItem->getDuration());
+                // Only update comment if the new item has a comment (to preserve existing comments)
+                if ($timesheetItem->getComment() !== null) {
+                    $existingItem->setComment($timesheetItem->getComment());
+                }
+                $this->getEntityManager()->persist($existingItem);
                 continue;
             }
-            // create
+            // Create new item
             $this->getEntityManager()->persist($timesheetItem);
         }
         $this->getEntityManager()->flush();
