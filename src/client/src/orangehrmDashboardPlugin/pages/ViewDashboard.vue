@@ -26,6 +26,9 @@
       <employee-attendance-widget></employee-attendance-widget>
     </oxd-grid-item>
     <oxd-grid-item class="orangehrm-dashboard-widget">
+      <punch-in-out-widget></punch-in-out-widget>
+    </oxd-grid-item>
+    <oxd-grid-item class="orangehrm-dashboard-widget">
       <my-action-summary-widget></my-action-summary-widget>
     </oxd-grid-item>
     <oxd-grid-item class="orangehrm-dashboard-widget">
@@ -67,6 +70,7 @@ import MyActionSummaryWidget from '@/orangehrmDashboardPlugin/components/MyActio
 import EmployeeLocationWidget from '@/orangehrmDashboardPlugin/components/EmployeeLocationWidget.vue';
 import EmployeesOnLeaveWidget from '@/orangehrmDashboardPlugin/components/EmployeesOnLeaveWidget.vue';
 import EmployeeAttendanceWidget from '@/orangehrmDashboardPlugin/components/EmployeeAttendanceWidget.vue';
+import PunchInOutWidget from '@/orangehrmDashboardPlugin/components/PunchInOutWidget.vue';
 
 export default {
   components: {
@@ -77,6 +81,7 @@ export default {
     'employee-location-widget': EmployeeLocationWidget,
     'employees-on-leave-widget': EmployeesOnLeaveWidget,
     'employee-attendance-widget': EmployeeAttendanceWidget,
+    'punch-in-out-widget': PunchInOutWidget,
   },
   mounted() {
     const http = new APIService(window.appGlobal.baseUrl, '/events/push');
