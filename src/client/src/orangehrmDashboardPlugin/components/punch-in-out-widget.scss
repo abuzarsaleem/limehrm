@@ -38,9 +38,15 @@
 
 .orangehrm-punch-in-out-card {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+  // Prevent creating containing block for fixed positioned children
+  transform: none !important;
+  perspective: none !important;
+  filter: none !important;
+  will-change: auto !important;
 }
 
 // Reduce spacing in form elements and fix horizontal scroll
@@ -48,7 +54,7 @@
   :deep(.oxd-form-row) {
     margin-bottom: 0.25rem;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   :deep(.oxd-divider) {
@@ -70,7 +76,7 @@
   :deep(.oxd-input-group) {
     margin-bottom: 0;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   :deep(textarea) {
@@ -84,14 +90,14 @@
   :deep(.oxd-grid) {
     gap: 0.5rem;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   :deep(.oxd-grid-item) {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
   }
 
   // Make date and time inputs smaller
@@ -157,8 +163,108 @@
 
   // Prevent scrollbars by ensuring content fits
   :deep(.orangehrm-full-width-grid) {
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
+  }
+  
+  // Ensure calendar and time picker popups float above everything
+  // Force calendar popup to use fixed positioning to escape widget boundaries
+  // Use very aggressive selectors to catch all calendar variants
+  :deep(.v-calendar),
+  :deep(.vc-container),
+  :deep([role="dialog"]),
+  :deep(.vc-popover-content-wrapper),
+  :deep(.oxd-date-input-popup),
+  :deep(.oxd-time-input-popup),
+  :deep(.vc-popover-content),
+  :deep(.vc-date-picker),
+  :deep(.vc-popover),
+  :deep(.vc-popover-container),
+  :deep(.vc-popover-content-wrapper),
+  :deep(.vc-base-select),
+  :deep(.vc-container),
+  :deep([class*="vc-popover"]),
+  :deep([class*="vc-container"]),
+  :deep([class*="vc-date"]),
+  :deep([class*="vc-calendar"]) {
+    z-index: 10000 !important;
+    position: fixed !important;
+    overflow: visible !important;
+    max-width: none !important;
+    max-height: none !important;
+    clip: auto !important;
+    clip-path: none !important;
+  }
+  
+  // Specifically target the calendar popover wrapper to ensure it escapes
+  :deep(.oxd-input-field[type="date"]),
+  :deep(.date-input) {
+    // Ensure the calendar popup parent allows overflow
+    &,
+    & *,
+    & .vc-popover-content-wrapper,
+    & .vc-container,
+    & .vc-popover,
+    & [class*="vc-"] {
+      overflow: visible !important;
+    }
+    
+    // Make sure any positioned calendar elements can escape widget boundaries
+    :deep(.vc-popover-content-wrapper),
+    :deep(.vc-container),
+    :deep(.vc-popover),
+    :deep(.vc-popover-container),
+    :deep(.vc-base-select),
+    :deep([class*="vc-"]) {
+      position: fixed !important;
+      z-index: 10000 !important;
+      max-width: none !important;
+      max-height: none !important;
+      overflow: visible !important;
+      clip: auto !important;
+      clip-path: none !important;
+      // Ensure it's not constrained by parent
+      left: auto !important;
+      right: auto !important;
+      top: auto !important;
+      bottom: auto !important;
+    }
+  }
+  
+  // Global override for any calendar popup within the widget - catch all variants
+  :deep(.vc-popover-content-wrapper),
+  :deep(.vc-container[class*="vc-"]),
+  :deep(.vc-popover),
+  :deep([class*="vc-popover"]),
+  :deep([class*="vc-container"]),
+  :deep([class*="vc-date"]),
+  :deep([class*="vc-calendar"]) {
+    position: fixed !important;
+    z-index: 10000 !important;
+    overflow: visible !important;
+    max-width: none !important;
+    max-height: none !important;
+    clip: auto !important;
+    clip-path: none !important;
+  }
+  
+  // Ensure date and time input containers allow overflow
+  :deep(.oxd-input-field[type="date"]),
+  :deep(.oxd-input-field[type="time"]),
+  :deep(.oxd-input-field) {
+    overflow: visible;
+    position: relative;
+    
+    .oxd-input-field__wrapper {
+      overflow: visible;
+      position: relative;
+    }
+    
+    // Ensure input wrapper allows popups
+    input[type="date"],
+    input[type="time"] {
+      overflow: visible;
+    }
   }
 
   // Style the submit button to be orange like Time at Work widget

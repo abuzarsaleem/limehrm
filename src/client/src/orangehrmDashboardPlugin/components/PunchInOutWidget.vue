@@ -205,6 +205,9 @@ export default {
       isEditable: false,
       previousRecordTimezone: null,
       timezoneOffset: null,
+      calendarObserver: null,
+      calendarCheckInterval: null,
+      resizeHandler: null,
     };
   },
 
@@ -307,7 +310,186 @@ export default {
     this.initializeWidget();
   },
 
+  mounted() {
+    this.setupCalendarPopupHandler();
+  },
+
+  beforeUnmount() {
+    if (this.calendarObserver) {
+      this.calendarObserver.disconnect();
+    }
+    if (this.calendarCheckInterval) {
+      clearInterval(this.calendarCheckInterval);
+    }
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+    }
+  },
+
   methods: {
+    setupCalendarPopupHandler() {
+      // Use MutationObserver to watch for calendar popup
+      this.calendarObserver = new MutationObserver(() => {
+        this.handleCalendarPopup();
+      });
+
+      // Start observing the widget
+      const widgetElement = this.$el;
+      if (widgetElement) {
+        this.calendarObserver.observe(widgetElement, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class', 'style'],
+        });
+      }
+
+      // Also check periodically for calendar popup
+      this.calendarCheckInterval = setInterval(() => {
+        this.handleCalendarPopup();
+      }, 100);
+
+      // Initial check
+      this.$nextTick(() => {
+        this.handleCalendarPopup();
+      });
+
+      // Handle window resize to reposition calendar on mobile/desktop switch
+      this.resizeHandler = () => {
+        this.handleCalendarPopup();
+      };
+      window.addEventListener('resize', this.resizeHandler);
+    },
+
+    handleCalendarPopup() {
+      // Find calendar popup elements - check both widget and document body
+      const widgetElement = this.$el;
+      if (!widgetElement) return;
+
+      // Look for calendar popup with various selectors
+      const calendarSelectors = [
+        '.vc-popover-content-wrapper',
+        '.vc-container',
+        '.vc-popover',
+        '[class*="vc-popover"]',
+        '[class*="vc-container"]',
+        '[class*="vc-date"]',
+        '[class*="vc-calendar"]',
+        '.oxd-date-input-calendar',
+        '[class*="oxd-date-input-calendar"]',
+      ];
+
+      // Search in widget and document body
+      const searchElements = [widgetElement, document.body];
+
+      calendarSelectors.forEach((selector) => {
+        searchElements.forEach((searchElement) => {
+          const popups = searchElement.querySelectorAll(selector);
+          popups.forEach((popup) => {
+            if (popup instanceof HTMLElement) {
+              // Check if this popup is related to our widget's date input
+              const widgetDateInput = widgetElement.querySelector(
+                'input[type="date"], .date-input input, .oxd-input-field[type="date"] input',
+              );
+
+              if (!widgetDateInput) return;
+
+              // Find the input field's parent container (oxd-input-field or oxd-grid-item)
+              let inputParent = widgetDateInput.closest(
+                '.oxd-input-field, .oxd-grid-item, .oxd-input-group',
+              );
+              if (!inputParent) {
+                inputParent = widgetDateInput.parentElement;
+              }
+
+              // Ensure parent has relative positioning
+              if (inputParent instanceof HTMLElement) {
+                const computedStyle = window.getComputedStyle(inputParent);
+                if (computedStyle.position === 'static') {
+                  inputParent.style.position = 'relative';
+                }
+                inputParent.style.overflow = 'visible';
+                inputParent.style.zIndex = '1';
+              }
+
+              // Use absolute positioning relative to parent
+              popup.style.position = 'absolute';
+              popup.style.zIndex = '10000';
+              popup.style.overflow = 'visible';
+              popup.style.maxWidth = 'none';
+              popup.style.maxHeight = 'none';
+              popup.style.clip = 'auto';
+              popup.style.clipPath = 'none';
+
+              // Calculate position relative to parent container
+              const inputRect = widgetDateInput.getBoundingClientRect();
+              const parentRect = inputParent
+                ? inputParent.getBoundingClientRect()
+                : widgetElement.getBoundingClientRect();
+              const popupRect = popup.getBoundingClientRect();
+
+              // Calculate relative positions
+              const relativeLeft = inputRect.left - parentRect.left;
+              const relativeTop = inputRect.bottom - parentRect.top;
+
+              // Ensure calendar fits within viewport
+              const viewportWidth = window.innerWidth;
+              const viewportHeight = window.innerHeight;
+              const popupWidth = popupRect.width || 300;
+              const popupHeight = popupRect.height || 300;
+
+              // Detect mobile viewport
+              const isMobile = viewportWidth < 768;
+              const mobilePadding = 10;
+
+              let leftPos = relativeLeft;
+              let topPos = relativeTop + 5;
+
+              // Check if calendar would overflow viewport
+              const absoluteLeft = parentRect.left + leftPos;
+              const absoluteTop = parentRect.top + topPos;
+
+              // Adjust horizontal position if it would overflow
+              if (absoluteLeft + popupWidth > viewportWidth - mobilePadding) {
+                leftPos =
+                  viewportWidth - mobilePadding - popupWidth - parentRect.left;
+              }
+              if (absoluteLeft < mobilePadding) {
+                leftPos = mobilePadding - parentRect.left;
+              }
+
+              // Adjust vertical position if it would overflow
+              if (absoluteTop + popupHeight > viewportHeight - mobilePadding) {
+                // Position above input instead
+                topPos = inputRect.top - parentRect.top - popupHeight - 5;
+              }
+              if (absoluteTop < mobilePadding) {
+                topPos = mobilePadding - parentRect.top;
+              }
+
+              // Apply calculated position
+              popup.style.left = `${leftPos}px`;
+              popup.style.top = `${topPos}px`;
+              popup.style.right = 'auto';
+              popup.style.bottom = 'auto';
+
+              // On mobile, ensure calendar doesn't exceed viewport width
+              if (isMobile) {
+                const maxWidth = viewportWidth - mobilePadding * 2;
+                popup.style.maxWidth = `${maxWidth}px`;
+              } else {
+                popup.style.maxWidth = 'none';
+              }
+
+              // Ensure popup is in the correct parent
+              if (inputParent && popup.parentElement !== inputParent) {
+                inputParent.appendChild(popup);
+              }
+            }
+          });
+        });
+      });
+    },
     async initializeWidget() {
       await this.fetchConfiguration();
       await this.setCurrentDateTime();
