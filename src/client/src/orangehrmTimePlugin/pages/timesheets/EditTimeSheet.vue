@@ -226,14 +226,14 @@ export default {
       };
       updateTimesheetEntries(props.timesheetId, payload, !props.myTimesheet)
         .then(() => {
-          // return saveSuccess();
+          return saveSuccess();
         })
         .catch(() => {
           // Catch invalid parameter error when submitting without any time
-          // return saveSuccess();
+          return saveSuccess();
         })
         .then(() => {
-          // onClickCancel();
+          onClickCancel();
         });
     };
 
