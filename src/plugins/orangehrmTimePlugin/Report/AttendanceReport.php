@@ -51,6 +51,8 @@ class AttendanceReport implements EndpointAwareReport
 
     public const PARAMETER_EMPLOYEE_NAME = 'employeeName';
     public const PARAMETER_TIME = 'time';
+    public const PARAMETER_PUNCH_IN = 'punchIn';
+    public const PARAMETER_PUNCH_OUT = 'punchOut';
 
     public const FILTER_EMP_NUMBER = 'empNumber';
     public const FILTER_JOB_TITLE_ID = 'jobTitleId';
@@ -204,6 +206,10 @@ class AttendanceReport implements EndpointAwareReport
                     ->setSize(self::DEFAULT_COLUMN_SIZE),
                 (new Column(self::PARAMETER_TIME))->setName($this->getI18NHelper()->transBySource('Time (Hours)'))
                     ->setCellProperties(['class' => ['col-alt' => true]])
+                    ->setSize(self::DEFAULT_COLUMN_SIZE),
+                (new Column(self::PARAMETER_PUNCH_IN))->setName($this->getI18NHelper()->transBySource('Punch In'))
+                    ->setSize(self::DEFAULT_COLUMN_SIZE),
+                (new Column(self::PARAMETER_PUNCH_OUT))->setName($this->getI18NHelper()->transBySource('Punch Out'))
                     ->setSize(self::DEFAULT_COLUMN_SIZE),
             ]
         );
