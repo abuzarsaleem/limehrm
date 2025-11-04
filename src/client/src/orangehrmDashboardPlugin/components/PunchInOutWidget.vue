@@ -208,6 +208,7 @@ export default {
       calendarObserver: null,
       calendarCheckInterval: null,
       resizeHandler: null,
+      originalWidgetBodyOverflow: null,
     };
   },
 
@@ -366,7 +367,11 @@ export default {
       const widgetElement = this.$el;
       if (!widgetElement) return;
 
-      // Look for calendar popup with various selectors
+      const widgetBody = widgetElement.querySelector(
+        '.orangehrm-dashboard-widget-body',
+      );
+
+      // Check if calendar is open
       const calendarSelectors = [
         '.vc-popover-content-wrapper',
         '.vc-container',
@@ -378,6 +383,37 @@ export default {
         '.oxd-date-input-calendar',
         '[class*="oxd-date-input-calendar"]',
       ];
+
+      let calendarIsOpen = false;
+      calendarSelectors.forEach((selector) => {
+        if (
+          widgetElement.querySelector(selector) ||
+          document.body.querySelector(selector)
+        ) {
+          calendarIsOpen = true;
+        }
+      });
+
+      // Restore scrollbar if calendar is closed
+      if (!calendarIsOpen && widgetBody instanceof HTMLElement) {
+        if (this.originalWidgetBodyOverflow !== null) {
+          widgetBody.style.overflow = this.originalWidgetBodyOverflow;
+          this.originalWidgetBodyOverflow = null;
+        } else {
+          widgetBody.style.overflow = '';
+        }
+        return;
+      }
+
+      // Store original overflow if calendar is opening
+      if (
+        calendarIsOpen &&
+        widgetBody instanceof HTMLElement &&
+        this.originalWidgetBodyOverflow === null
+      ) {
+        this.originalWidgetBodyOverflow =
+          window.getComputedStyle(widgetBody).overflow;
+      }
 
       // Search in widget and document body
       const searchElements = [widgetElement, document.body];
@@ -410,6 +446,14 @@ export default {
                 }
                 inputParent.style.overflow = 'visible';
                 inputParent.style.zIndex = '1';
+              }
+
+              // Disable scrollbar on widget body when calendar is open
+              const widgetBody = widgetElement.querySelector(
+                '.orangehrm-dashboard-widget-body',
+              );
+              if (widgetBody instanceof HTMLElement) {
+                widgetBody.style.overflow = 'visible';
               }
 
               // Use absolute positioning relative to parent
@@ -460,11 +504,52 @@ export default {
 
               // Adjust vertical position if it would overflow
               if (absoluteTop + popupHeight > viewportHeight - mobilePadding) {
-                // Position above input instead
-                topPos = inputRect.top - parentRect.top - popupHeight - 5;
+                // Try positioning above input first
+                const topPosAbove =
+                  inputRect.top - parentRect.top - popupHeight - 5;
+                if (topPosAbove >= mobilePadding - parentRect.top) {
+                  topPos = topPosAbove;
+                } else {
+                  // If doesn't fit above, reduce calendar height
+                  const availableHeight =
+                    viewportHeight - absoluteTop - mobilePadding;
+                  if (availableHeight > 200) {
+                    popup.style.maxHeight = `${availableHeight}px`;
+                    popup.style.overflowY = 'auto';
+                  } else {
+                    // Reduce both height and width if very constrained
+                    popup.style.maxHeight = `${Math.max(
+                      200,
+                      availableHeight,
+                    )}px`;
+                    popup.style.maxWidth = `${Math.min(popupWidth, 280)}px`;
+                    popup.style.overflowY = 'auto';
+                  }
+                }
               }
               if (absoluteTop < mobilePadding) {
                 topPos = mobilePadding - parentRect.top;
+              }
+
+              // Check widget boundaries and reduce calendar size if needed
+              const widgetBodyRect = widgetBody
+                ? widgetBody.getBoundingClientRect()
+                : null;
+              if (widgetBodyRect) {
+                const calendarBottom = absoluteTop + popupHeight;
+                const widgetBottom = widgetBodyRect.bottom;
+                const spaceBelow = viewportHeight - widgetBottom;
+
+                // If calendar extends beyond widget and viewport space is limited
+                if (
+                  calendarBottom > widgetBottom &&
+                  spaceBelow < popupHeight &&
+                  spaceBelow > 150
+                ) {
+                  // Reduce calendar height to fit available space
+                  popup.style.maxHeight = `${spaceBelow}px`;
+                  popup.style.overflowY = 'auto';
+                }
               }
 
               // Apply calculated position
@@ -478,7 +563,11 @@ export default {
                 const maxWidth = viewportWidth - mobilePadding * 2;
                 popup.style.maxWidth = `${maxWidth}px`;
               } else {
-                popup.style.maxWidth = 'none';
+                // On desktop, ensure it doesn't exceed widget width
+                const widgetWidth = widgetElement.getBoundingClientRect().width;
+                if (popupWidth > widgetWidth * 1.5) {
+                  popup.style.maxWidth = `${widgetWidth * 1.5}px`;
+                }
               }
 
               // Ensure popup is in the correct parent

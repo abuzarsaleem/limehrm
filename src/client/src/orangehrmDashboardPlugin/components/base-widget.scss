@@ -63,6 +63,14 @@
     }
     @include oxd-scrollbar();
     
+    // When calendar is open, allow overflow without scrollbar
+    &:has(.oxd-date-input-calendar),
+    &:has([class*="vc-calendar"]),
+    &:has([class*="vc-popover"]),
+    &:has([class*="vc-container"]) {
+      overflow: visible !important;
+    }
+    
     // Allow calendar popups to be positioned relative to parent
     :deep(.oxd-input-field),
     :deep(.oxd-grid-item),
