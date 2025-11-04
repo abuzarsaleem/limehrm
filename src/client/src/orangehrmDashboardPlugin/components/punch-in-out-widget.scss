@@ -42,6 +42,8 @@
   width: 100%;
   box-sizing: border-box;
   position: relative;
+  margin-right: 0;
+  padding-right: 0;
   // Prevent creating containing block for fixed positioned children
   transform: none !important;
   perspective: none !important;
@@ -55,6 +57,8 @@
     margin-bottom: 0.25rem;
     width: 100%;
     overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
   }
 
   :deep(.oxd-divider) {
@@ -64,6 +68,9 @@
   :deep(.oxd-form-actions) {
     margin-top: 0.25rem;
     padding-top: 0.25rem;
+    margin-right: 0;
+    padding-right: 0;
+    justify-content: flex-end;
   }
 
   :deep(.oxd-input-field) {
@@ -71,12 +78,16 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    margin-right: 0;
+    padding-right: 0;
   }
 
   :deep(.oxd-input-group) {
     margin-bottom: 0;
     width: 100%;
     overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
   }
 
   :deep(textarea) {
@@ -91,6 +102,8 @@
     gap: 0.5rem;
     width: 100%;
     overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
   }
 
   :deep(.oxd-grid-item) {
@@ -98,6 +111,8 @@
     max-width: 100%;
     box-sizing: border-box;
     overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
   }
 
   // Make date and time inputs smaller
@@ -107,6 +122,8 @@
     padding: 0.4rem 0.5rem;
     max-width: 100%;
     box-sizing: border-box;
+    width: 100%;
+    margin-right: 0;
   }
 
   // Constrain input fields to prevent overflow
@@ -114,6 +131,8 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    margin-right: 0;
+    padding-right: 0;
   }
 
   &-small-text {
@@ -165,6 +184,9 @@
   :deep(.orangehrm-full-width-grid) {
     overflow: visible;
     max-width: 100%;
+    width: 100%;
+    margin-right: 0;
+    padding-right: 0;
   }
   
   // Ensure calendar and time picker popups float above everything

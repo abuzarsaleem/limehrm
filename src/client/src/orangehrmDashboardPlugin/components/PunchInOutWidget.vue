@@ -36,41 +36,6 @@
           </div>
         </div>
 
-        <template v-if="attendanceRecord.previousRecord && isPunchedIn">
-          <oxd-divider />
-          <oxd-form-row>
-            <oxd-grid :cols="1" class="orangehrm-full-width-grid">
-              <oxd-grid-item>
-                <oxd-input-group :label="$t('attendance.punched_in_time')">
-                  <oxd-text
-                    type="subtitle-2"
-                    class="orangehrm-punch-in-out-small-text"
-                  >
-                    {{ previousAttendanceRecordDate }} -
-                    {{ previousAttendanceRecordTime }}
-                    <oxd-text
-                      tag="span"
-                      class="orangehrm-attendance-punchedIn-timezone"
-                    >
-                      {{ `(GMT ${previousRecordTimezone})` }}
-                    </oxd-text>
-                  </oxd-text>
-                </oxd-input-group>
-              </oxd-grid-item>
-              <oxd-grid-item v-if="attendanceRecord.previousRecord.note">
-                <oxd-input-group :label="$t('attendance.punched_in_note')">
-                  <oxd-text
-                    type="subtitle-2"
-                    class="orangehrm-punch-in-out-small-text"
-                  >
-                    {{ attendanceRecord.previousRecord.note }}
-                  </oxd-text>
-                </oxd-input-group>
-              </oxd-grid-item>
-            </oxd-grid>
-          </oxd-form-row>
-        </template>
-
         <oxd-divider />
         <oxd-form-row>
           <oxd-grid :cols="2" class="orangehrm-full-width-grid">
@@ -113,9 +78,7 @@
           </oxd-grid>
         </oxd-form-row>
 
-        <oxd-divider />
         <oxd-form-actions>
-          <required-text />
           <oxd-button
             class="orangehrm-left-space"
             :display-type="punchButtonType"
