@@ -49,7 +49,7 @@ class ImageAttachmentControllerTest extends KernelTestCase
         $this->assertEquals('image/png', $response->headers->get('content-type'));
         $this->assertEquals('2431', $response->headers->get('content-length'));
         $this->assertEquals(
-            "attachment; filename*=utf-8''ohrm_logo.png",
+            "attachment; filename*=utf-8''IKS-Logo-HR-Management.png",
             $response->headers->get('content-disposition')
         );
         $this->assertEquals(

@@ -15,10 +15,10 @@ GetOne:
       },
       "showSocialMediaImages": false,
       "clientLogo": {
-        "filename": "ohrm_logo.png"
+        "filename": "IKS-Logo-HR-Management.png"
       },
       "clientBanner": {
-        "filename": "orangehrm-logo.png"
+        "filename": "IKS-HR-Management.png"
       },
       "loginBanner": {
         "filename": "ohrm_login.png"
@@ -184,7 +184,7 @@ Update:
       "showSocialMediaImages": false,
       "currentClientLogo": "replaceCurrent",
       "clientLogo": {
-        "name": "ohrm_logo.png",
+        "name": "IKS-Logo-HR-Management.png",
         "type": "image/png",
         "size": 2431,
         "base64": "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"
@@ -216,7 +216,7 @@ Update:
       },
       "showSocialMediaImages": false,
       "clientLogo": {
-        "filename": "ohrm_logo.png"
+        "filename": "IKS-Logo-HR-Management.png"
       },
       "clientBanner": {
         "filename": "orangehrm_banner.png"
@@ -245,7 +245,7 @@ Update:
       "showSocialMediaImages": false,
       "currentClientLogo": "replaceCurrent",
       "clientLogo": {
-        "name": "ohrm_logo.png",
+        "name": "IKS-Logo-HR-Management.png",
         "type": "image/png",
         "size": 2431,
         "base64": "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"
@@ -277,7 +277,7 @@ Update:
       },
       "showSocialMediaImages": false,
       "clientLogo": {
-        "filename": "ohrm_logo.png"
+        "filename": "IKS-Logo-HR-Management.png"
       },
       "clientBanner": {
         "filename": "orangehrm_banner.png"
@@ -306,7 +306,7 @@ Update:
       "showSocialMediaImages": false,
       "currentClientLogo": "deleteCurrent",
       "clientLogo": {
-        "name": "ohrm_logo.png",
+        "name": "IKS-Logo-HR-Management.png",
         "type": "image/png",
         "size": 2431,
         "base64": "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"
@@ -395,10 +395,10 @@ Update:
       },
       "showSocialMediaImages": true,
       "clientLogo": {
-        "filename": "ohrm_logo.png"
+        "filename": "IKS-Logo-HR-Management.png"
       },
       "clientBanner": {
-        "filename": "orangehrm-logo.png"
+        "filename": "IKS-HR-Management.png"
       },
       "loginBanner": {
         "filename": "ohrm_login.png"
@@ -424,7 +424,7 @@ Update:
       "showSocialMediaImages": true,
       "currentClientLogo": "keepCurrent",
       "clientLogo": {
-        "name": "ohrm_logo.png",
+        "name": "IKS-Logo-HR-Management.png",
         "type": "image/png",
         "size": 2431,
         "base64": "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"
@@ -485,7 +485,7 @@ Update:
       },
       "showSocialMediaImages": true,
       "clientLogo": {
-        "filename": "ohrm_logo.png"
+        "filename": "IKS-Logo-HR-Management.png"
       },
       "clientBanner": {
         "filename": "orangehrm_banner.png"

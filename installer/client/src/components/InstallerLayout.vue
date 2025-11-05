@@ -72,7 +72,7 @@ export default {
   },
   data() {
     return {
-      brandingSrc: `${window.appGlobal.publicPath}/client/public/ohrm_branding.png`,
+      brandingSrc: `${window.appGlobal.publicPath}/client/public/Login-Banner.png`,
     };
   },
 };

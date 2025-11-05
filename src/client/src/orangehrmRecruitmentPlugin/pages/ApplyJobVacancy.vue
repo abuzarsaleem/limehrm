@@ -262,7 +262,7 @@ export default {
     },
   },
   setup() {
-    const defaultPic = `${window.appGlobal.publicPath}/images/ohrm_branding.png`;
+    const defaultPic = `${window.appGlobal.publicPath}/images/Login-Banner.png`;
     const applicant = ref({
       ...applicantModel,
     });

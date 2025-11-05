@@ -241,7 +241,7 @@ class ThemeService
         if ($this->getImageETag('client_banner') !== null) {
             return $request->getBaseUrl() . "/admin/theme/image/clientBanner?v=$assetsVersion";
         }
-        return $request->getBasePath() . "/images/orangehrm-logo.png?v=$assetsVersion";
+        return $request->getBasePath() . "/images/IKS-HR-Management.png?v=$assetsVersion";
     }
 
     /**
@@ -254,6 +254,6 @@ class ThemeService
         if ($this->getImageETag('login_banner') !== null) {
             return $request->getBaseUrl() . "/admin/theme/image/loginBanner?v=$assetsVersion";
         }
-        return $request->getBasePath() . "/images/ohrm_branding.png?v=$assetsVersion";
+        return $request->getBasePath() . "/images/Login-Banner.png?v=$assetsVersion";
     }
 }

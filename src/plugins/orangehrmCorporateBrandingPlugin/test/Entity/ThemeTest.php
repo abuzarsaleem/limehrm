@@ -36,7 +36,7 @@ class ThemeTest extends EntityTestCase
         $theme->setName('orange');
         $theme->setVariables(['primary' => '#FD7B1D']);
         $theme->setClientLogo('##logo##');
-        $theme->setClientLogoFilename('ohrm_logo.png');
+        $theme->setClientLogoFilename('IKS-Logo-HR-Management.png');
         $theme->setClientLogoFileType('image/png');
         $theme->setClientLogoFileSize(100);
         $theme->setClientBanner('##banner##');
@@ -53,7 +53,7 @@ class ThemeTest extends EntityTestCase
         $this->assertEquals('orange', $theme->getName());
         $this->assertEquals(['primary' => '#FD7B1D'], $theme->getVariables());
         $this->assertEquals('##logo##', $theme->getClientLogo());
-        $this->assertEquals('ohrm_logo.png', $theme->getClientLogoFilename());
+        $this->assertEquals('IKS-Logo-HR-Management.png', $theme->getClientLogoFilename());
         $this->assertEquals('image/png', $theme->getClientLogoFileType());
         $this->assertEquals(100, $theme->getClientLogoFileSize());
         $this->assertEquals('##banner##', $theme->getClientBanner());
