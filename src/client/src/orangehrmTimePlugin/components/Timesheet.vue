@@ -103,7 +103,7 @@
             <td class="orangehrm-timesheet-table-body-cell">
               <activity-dropdown
                 v-if="editable"
-                :rules="rules.activity"
+                :rules="getActivityRules()"
                 :project-id="record.project && record.project.id"
                 :model-value="getActivity(record.activity)"
                 @update:model-value="updateActivity($event, i)"
@@ -293,12 +293,6 @@ export default {
           validSelection,
           (v) => v !== null || this.$t('time.select_a_project'),
         ],
-        activity: [
-          (v) => v !== null || this.$t('time.select_an_activity'),
-          (v) =>
-            this.records.filter((record) => record.activity?.id === v?.id)
-              .length < 2 || this.$t('time.duplicate_record'),
-        ],
       },
     };
   },
@@ -475,6 +469,13 @@ export default {
     },
     getActivity(activity) {
       return activity ? {id: activity.id, label: activity.name} : null;
+    },
+    getActivityRules() {
+      return [
+        (v) => v !== null || this.$t('time.select_an_activity'),
+        // Removed duplicate validation - allow same project-activity on different dates
+        // Backend will handle validation on save if needed
+      ];
     },
     getDuration(entry) {
       // TODO: convert to format from user config

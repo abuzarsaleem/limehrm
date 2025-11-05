@@ -23,10 +23,20 @@ use OrangeHRM\Core\Traits\Auth\AuthUserTrait;
 use OrangeHRM\Core\Vue\Component;
 use OrangeHRM\Core\Vue\Prop;
 use OrangeHRM\Framework\Http\Request;
+use OrangeHRM\Framework\Http\RedirectResponse; // Here I want to redirect to the dashboard index page
 
 class ViewAssignClaimController extends AbstractVueController
 {
     use AuthUserTrait;
+
+    // Here I want to redirect to the dashboard index page
+    /**
+     * @inheritDoc
+     */
+    public function handle(Request $request): RedirectResponse
+    {
+        return $this->redirect('/dashboard/index');
+    }
 
     /**
      * @inheritDoc

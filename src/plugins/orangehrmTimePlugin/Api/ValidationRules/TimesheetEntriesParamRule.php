@@ -127,15 +127,39 @@ class TimesheetEntriesParamRule extends AbstractRule
                 $validatedDates[$date] = true;
 
                 $dateObj = new DateTime($date);
+                $dateObj->setTime(0, 0, 0); // Normalize time to midnight for date comparison
                 // check date within the startDate and endDate of the timesheet
-                if ($this->timesheet instanceof Timesheet &&
-                    !($this->timesheet->getStartDate() <= $dateObj && $dateObj <= $this->timesheet->getEndDate())) {
-                    return false;
+                if ($this->timesheet instanceof Timesheet) {
+                    $startDate = clone $this->timesheet->getStartDate();
+                    $startDate->setTime(0, 0, 0);
+                    $endDate = clone $this->timesheet->getEndDate();
+                    $endDate->setTime(23, 59, 59); // Set to end of day for inclusive comparison
+                    if (!($startDate <= $dateObj && $dateObj <= $endDate)) {
+                        return false;
+                    }
                 }
 
-                // only duration allowed
-                if (count(array_keys($dateValue)) != 1) {
+                // duration is required, id is optional
+                $dateKeys = array_keys($dateValue);
+                $keyCount = count($dateKeys);
+                if ($keyCount < 1 || $keyCount > 2) {
                     return false;
+                }
+                if (!isset($dateValue[EmployeeTimesheetItemAPI::PARAMETER_DURATION])) {
+                    return false;
+                }
+                // Ensure only valid keys are present (duration and optionally id)
+                $allowedKeys = [EmployeeTimesheetItemAPI::PARAMETER_DURATION, 'id'];
+                foreach ($dateKeys as $key) {
+                    if (!in_array($key, $allowedKeys)) {
+                        return false;
+                    }
+                }
+                // If id is present, validate it's a positive integer
+                if (isset($dateValue['id'])) {
+                    if (!(is_numeric($dateValue['id']) && $dateValue['id'] > 0)) {
+                        return false;
+                    }
                 }
                 // check format and duration should less than 24:00
                 if (!$this->getTimeRule()->validate($dateValue[EmployeeTimesheetItemAPI::PARAMETER_DURATION])) {
@@ -147,16 +171,27 @@ class TimesheetEntriesParamRule extends AbstractRule
             $rowCount++;
         }
 
+        // Get unique pairs to validate (duplicates are allowed for different dates)
+        $uniquePairs = [];
+        foreach ($projectActivityIdPairs as $pair) {
+            $pairKey = $pair[0] . '_' . $pair[1]; // activityId_projectId as key
+            if (!isset($uniquePairs[$pairKey])) {
+                $uniquePairs[$pairKey] = $pair;
+            }
+        }
+        $uniquePairsArray = array_values($uniquePairs);
+
         $count = $this->getProjectService()
             ->getProjectActivityDao()
-            ->getActivitiesCountByProjectActivityIdPairs($projectActivityIdPairs);
+            ->getActivitiesCountByProjectActivityIdPairs($uniquePairsArray);
         /**
          * 1. Check project ids, and activity ids available
          * 2. Check an activity belongs to particular project id
-         * 3. Validate duplicated project and activity rows
+         * 3. Validate duplicated project and activity rows (duplicates are allowed)
          * 4. Consider deleted project ids, and deleted activity ids
          */
-        if ($rowCount !== $count) {
+        // Compare unique pairs count, not total row count (allows duplicates)
+        if (count($uniquePairsArray) !== $count) {
             return false;
         }
         return true;

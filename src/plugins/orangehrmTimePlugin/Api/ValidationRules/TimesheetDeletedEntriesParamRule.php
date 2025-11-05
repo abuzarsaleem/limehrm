@@ -19,7 +19,6 @@
 namespace OrangeHRM\Time\Api\ValidationRules;
 
 use OrangeHRM\Core\Api\V2\Validator\Rules\AbstractRule;
-use OrangeHRM\Time\Api\EmployeeTimesheetItemAPI;
 
 class TimesheetDeletedEntriesParamRule extends AbstractRule
 {
@@ -32,20 +31,20 @@ class TimesheetDeletedEntriesParamRule extends AbstractRule
             return false;
         }
         foreach ($entries as $entry) {
-            if (count(array_keys($entry)) != 2) {
-                return false;
-            }
-            // `projectId`, `activityId` required fields
-            if (!(isset($entry[EmployeeTimesheetItemAPI::PARAMETER_PROJECT_ID]) &&
-                isset($entry[EmployeeTimesheetItemAPI::PARAMETER_ACTIVITY_ID]))) {
-                return false;
-            }
-            $projectId = $entry[EmployeeTimesheetItemAPI::PARAMETER_PROJECT_ID];
-            if (!(is_numeric($projectId) && ($projectId > 0))) {
-                return false;
-            }
-            $activityId = $entry[EmployeeTimesheetItemAPI::PARAMETER_ACTIVITY_ID];
-            if (!(is_numeric($activityId) && ($activityId > 0))) {
+            // Validate that entry is either an integer ID or an array with 'id' key
+            if (is_numeric($entry) && $entry > 0) {
+                // Simple integer ID format
+                continue;
+            } elseif (is_array($entry)) {
+                // Array format with 'id' key
+                if (count(array_keys($entry)) != 1 || !isset($entry['id'])) {
+                    return false;
+                }
+                $id = $entry['id'];
+                if (!(is_numeric($id) && $id > 0)) {
+                    return false;
+                }
+            } else {
                 return false;
             }
         }

@@ -18,7 +18,8 @@
  -->
 
 <template>
-  <oxd-input-field type="select" :options="options"> </oxd-input-field>
+  <oxd-input-field type="select" :options="options" :rules="rules">
+  </oxd-input-field>
 </template>
 
 <script>
@@ -32,6 +33,10 @@ export default {
       type: Number,
       required: false,
       default: null,
+    },
+    rules: {
+      type: Array,
+      default: () => [],
     },
   },
   setup(props) {

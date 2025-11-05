@@ -19,7 +19,7 @@
 return [
     'phpversion' => [
         'min' => '7.4',
-        'max' => '8.3',
+        'max' => '8.5',
         'excludeRange' => [],
     ],
 

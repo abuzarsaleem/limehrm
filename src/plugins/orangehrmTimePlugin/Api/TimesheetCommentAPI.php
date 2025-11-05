@@ -51,6 +51,7 @@ class TimesheetCommentAPI extends Endpoint implements ResourceEndpoint
     public const PARAMETER_PROJECT_ACTIVITY_ID = 'activityId';
     public const PARAMETER_DATE = 'date';
     public const PARAMETER_COMMENT = 'comment';
+    public const PARAMETER_COMMENT_ID = 'commentId';
 
     public const PARAM_RULE_COMMENT_MAX_LENGTH = 2000;
 
@@ -70,6 +71,7 @@ class TimesheetCommentAPI extends Endpoint implements ResourceEndpoint
      *             @OA\Property(property="projectId", type="integer"),
      *             @OA\Property(property="activityId", type="integer"),
      *             @OA\Property(property="date", type="string", format="date"),
+     *             @OA\Property(property="commentId", type="integer", nullable=true),
      *             @OA\Property(
      *                 property="comment",
      *                 type="string",
@@ -115,16 +117,21 @@ class TimesheetCommentAPI extends Endpoint implements ResourceEndpoint
             ->getProjectActivityByProjectIdAndProjectActivityId($projectId, $projectActivityId);
         $this->throwRecordNotFoundExceptionIfNotExist($projectActivity, ProjectActivity::class);
 
-        $timesheetItem = $this->getTimesheetService()
-            ->getTimesheetDao()
-            ->getTimesheetItemByProjectIdAndTimesheetIdAndActivityIdAndDate(
-                $timesheetId,
-                $projectId,
-                $projectActivityId,
-                $date
-            );
+        // If commentId is provided, update that specific item
+        // Otherwise, always create a new item (even if one exists with same project/activity/date)
+        $commentId = $this->getRequestParams()->getIntOrNull(
+            RequestParams::PARAM_TYPE_BODY,
+            self::PARAMETER_COMMENT_ID
+        );
 
-        if (is_null($timesheetItem)) {
+        if (!is_null($commentId)) {
+            // Update existing item by ID
+            $timesheetItem = $this->getTimesheetService()
+                ->getTimesheetDao()
+                ->getTimesheetItemByTimesheetIdAndTimesheetItemId($timesheetId, $commentId);
+            $this->throwRecordNotFoundExceptionIfNotExist($timesheetItem, TimesheetItem::class);
+        } else {
+            // Always create a new item (don't look for existing one)
             $timesheetItem = new TimesheetItem();
         }
         $this->setCommentToTimesheetItem($timesheetItem);
@@ -200,6 +207,13 @@ class TimesheetCommentAPI extends Endpoint implements ResourceEndpoint
                     self::PARAMETER_COMMENT,
                     new Rule(Rules::STRING_TYPE),
                     new Rule(Rules::LENGTH, [null, self::PARAM_RULE_COMMENT_MAX_LENGTH])
+                ),
+                true
+            ),
+            $this->getValidationDecorator()->notRequiredParamRule(
+                new ParamRule(
+                    self::PARAMETER_COMMENT_ID,
+                    new Rule(Rules::POSITIVE)
                 ),
                 true
             ),

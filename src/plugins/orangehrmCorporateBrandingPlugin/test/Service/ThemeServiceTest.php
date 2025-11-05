@@ -144,7 +144,7 @@ class ThemeServiceTest extends KernelTestCase
         ]);
         $themeService = new ThemeService();
         $image = $themeService->getImage('client_logo');
-        $this->assertEquals('ohrm_logo.png', $image->getFilename());
+        $this->assertEquals('IKS-Logo-HR-Management.png', $image->getFilename());
     }
 
     public function testGetImageWithNullImage(): void

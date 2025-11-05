@@ -172,14 +172,49 @@ export default {
 
     const onSave = () => {
       state.isLoading = true;
+
+      // Collect all entry IDs from current records
+      const currentEntryIds = new Set();
+      state.timesheetRecords.forEach((record) => {
+        if (record.dates) {
+          Object.keys(record.dates).forEach((date) => {
+            if (record.dates[date]?.id) {
+              currentEntryIds.add(record.dates[date].id);
+            }
+          });
+        }
+      });
+
+      // Collect all entry IDs from original modal (snapshot)
+      const originalEntryIds = [];
+      timesheetModal.forEach((record) => {
+        if (record.dates) {
+          Object.keys(record.dates).forEach((date) => {
+            if (record.dates[date]?.id) {
+              originalEntryIds.push(record.dates[date].id);
+            }
+          });
+        }
+      });
+
+      // Find IDs that exist in original but not in current (these should be deleted)
+      const deletedEntryIds = originalEntryIds.filter(
+        (id) => !currentEntryIds.has(id),
+      );
+
       const payload = {
         entries: state.timesheetRecords.map((record) => {
           const dates = {};
           for (const date in record.dates) {
             const _duration = parseTimeInSeconds(record.dates[date].duration);
-            dates[date] = {
+            const dateEntry = {
               duration: _duration > 0 ? secondsTohhmm(_duration) : '00:00',
             };
+            // Include item ID if it exists (to match existing entries)
+            if (record.dates[date]?.id) {
+              dateEntry.id = record.dates[date].id;
+            }
+            dates[date] = dateEntry;
           }
           return {
             projectId: record.project.id,
@@ -187,21 +222,7 @@ export default {
             dates,
           };
         }),
-        deletedEntries: timesheetModal
-          .filter((record) => {
-            if (!record.project) return false;
-            return (
-              state.timesheetRecords.findIndex(
-                (item) =>
-                  item.project.id === record.project.id &&
-                  item.activity.id === record.activity.id,
-              ) < 0
-            );
-          })
-          .map((record) => ({
-            projectId: record.project.id,
-            activityId: record.activity.id,
-          })),
+        deletedEntries: deletedEntryIds.map((id) => ({id})),
       };
       updateTimesheetEntries(props.timesheetId, payload, !props.myTimesheet)
         .then(() => {

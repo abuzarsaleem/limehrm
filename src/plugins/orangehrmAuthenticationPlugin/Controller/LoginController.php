@@ -82,7 +82,7 @@ class LoginController extends AbstractVueController implements PublicControllerI
             )
         );
         $component->addProp(
-            new Prop('login-logo-src', Prop::TYPE_STRING, $request->getBasePath() . '/images/ohrm_logo.png')
+            new Prop('login-logo-src', Prop::TYPE_STRING, $request->getBasePath() . '/images/IKS-Logo-HR-Management.png')
         );
         $component->addProp(
             new Prop('login-banner-src', Prop::TYPE_STRING, $this->getThemeService()->getLoginBannerURL($request))

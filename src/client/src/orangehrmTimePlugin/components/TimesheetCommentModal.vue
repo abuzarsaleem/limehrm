@@ -160,16 +160,23 @@ export default {
   methods: {
     onSave() {
       this.isLoading = true;
+      const payload = {
+        date: this.data.date,
+        comment: this.comment,
+        projectId: this.data.project.id,
+        activityId: this.data.activity.id,
+      };
+
+      // Include commentId if updating an existing comment
+      if (this.data?.id) {
+        payload.commentId = this.data.id;
+      }
+
       this.http
         .request({
           method: 'PUT',
           url: `/api/v2/time/timesheets/${this.timesheetId}/entries/comment`,
-          data: {
-            date: this.data.date,
-            comment: this.comment,
-            projectId: this.data.project.id,
-            activityId: this.data.activity.id,
-          },
+          data: payload,
         })
         .then((response) => {
           const {data} = response.data;

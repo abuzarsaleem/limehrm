@@ -26,12 +26,22 @@ use OrangeHRM\Core\Traits\Service\ConfigServiceTrait;
 use OrangeHRM\Core\Vue\Component;
 use OrangeHRM\Core\Vue\Prop;
 use OrangeHRM\Framework\Http\Request;
+use OrangeHRM\Framework\Http\RedirectResponse; // Here I want to redirect to the dashboard index page
 
 class PurgeEmployeeController extends AbstractVueController implements AdminPrivilegeController
 {
     use AuthUserTrait;
     use AdministratorAccessTrait;
     use ConfigServiceTrait;
+
+    // Here I want to redirect to the dashboard index page
+    /**
+     * @inheritDoc
+     */
+    public function handle(Request $request): RedirectResponse
+    {
+        return $this->redirect('/dashboard/index');
+    }
 
     /**
      * @inheritDoc
@@ -47,14 +57,14 @@ class PurgeEmployeeController extends AbstractVueController implements AdminPriv
         $this->setComponent($component);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function handle(Request $request)
-    {
-        if (!$this->getAuthUser()->getHasAdminAccess()) {
-            return $this->forwardToAdministratorAccess($request);
-        }
-        return parent::handle($request);
-    }
+    // /**
+    //  * @inheritDoc
+    //  */
+    // public function handle(Request $request)
+    // {
+    //     if (!$this->getAuthUser()->getHasAdminAccess()) {
+    //         return $this->forwardToAdministratorAccess($request);
+    //     }
+    //     return parent::handle($request);
+    // }
 }

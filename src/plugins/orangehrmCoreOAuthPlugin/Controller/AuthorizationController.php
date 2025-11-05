@@ -85,7 +85,7 @@ class AuthorizationController extends AbstractVueController implements PublicCon
             new Prop(
                 'login-banner-src',
                 Prop::TYPE_STRING,
-                $request->getBasePath() . "/images/ohrm_branding.png?v=$assetsVersion"
+                $request->getBasePath() . "/images/Login-Banner.png?v=$assetsVersion"
             )
         );
 
