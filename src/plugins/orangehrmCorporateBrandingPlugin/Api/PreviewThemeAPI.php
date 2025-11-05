@@ -57,12 +57,12 @@ class PreviewThemeAPI extends Endpoint implements CollectionEndpoint
      *     operationId="preview-theme",
      *     @OA\RequestBody(
      *         @OA\JsonContent(
-     *             @OA\Property(property="primaryColor", type="string", example="#FF7B1D"),
+     *             @OA\Property(property="primaryColor", type="string", example="#28A848"),
      *             @OA\Property(property="primaryFontColor", type="string", example="#FFFFFF"),
      *             @OA\Property(property="secondaryColor", type="string", example="#76BC21"),
      *             @OA\Property(property="secondaryFontColor", type="string", example="#FFFFFF"),
-     *             @OA\Property(property="primaryGradientStartColor", type="string", example="#FF920B"),
-     *             @OA\Property(property="primaryGradientEndColor", type="string", example="#F35C17"),
+     *             @OA\Property(property="primaryGradientStartColor", type="string", example="#28A848"),
+     *             @OA\Property(property="primaryGradientEndColor", type="string", example="#06562C"),
      *             required={"primaryColor", "primaryFontColor", "secondaryColor", "secondaryFontColor", "primaryGradientStartColor", "primaryGradientEndColor"}
      *         )
      *     ),
@@ -72,14 +72,14 @@ class PreviewThemeAPI extends Endpoint implements CollectionEndpoint
      *             @OA\Property(
      *                 property="data",
      *                 type="object",
-     *                 @OA\Property(property="--oxd-primary-one-color", type="string", example="#FF7B1D"),
+     *                 @OA\Property(property="--oxd-primary-one-color", type="string", example="#28A848"),
      *                 @OA\Property(property="--oxd-primary-font-color", type="string", example="#FFFFFF"),
      *                 @OA\Property(property="--oxd-secondary-four-color", type="string", example="#76BC21"),
      *                 @OA\Property(property="--oxd-secondary-font-color", type="string", example="#FFFFFF"),
-     *                 @OA\Property(property="--oxd-primary-gradient-start-color", type="string", example="#FF920B"),
-     *                 @OA\Property(property="--oxd-primary-gradient-end-color", type="string", example="#F35C17"),
-     *                 @OA\Property(property="--oxd-secondary-gradient-start-color", type="string", example="#FF920B"),
-     *                 @OA\Property(property="--oxd-secondary-gradient-end-color", type="string", example="#F35C17"),
+     *                 @OA\Property(property="--oxd-primary-gradient-start-color", type="string", example="#28A848"),
+     *                 @OA\Property(property="--oxd-primary-gradient-end-color", type="string", example="#06562C"),
+     *                 @OA\Property(property="--oxd-secondary-gradient-start-color", type="string", example="#28A848"),
+     *                 @OA\Property(property="--oxd-secondary-gradient-end-color", type="string", example="#06562C"),
      *                 @OA\Property(property="--oxd-primary-one-lighten-5-color", type="string", example="#ff8a37"),
      *                 @OA\Property(property="--oxd-primary-one-lighten-30-color", type="string", example="#ffd4b6"),
      *                 @OA\Property(property="--oxd-primary-one-darken-5-color", type="string", example="#ff6c03"),

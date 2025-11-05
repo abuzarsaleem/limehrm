@@ -92,7 +92,7 @@ import {navigate} from '@/core/util/helper/navigation';
 import useLocale from '@/core/util/composable/useLocale';
 import {APIService} from '@/core/util/services/api.service';
 import BaseWidget from '@/orangehrmDashboardPlugin/components/BaseWidget.vue';
-import {OxdBarChart, OxdIcon, CHART_COLORS} from '@ohrm/oxd';
+import {OxdBarChart, OxdIcon} from '@ohrm/oxd';
 
 export default {
   name: 'EmployeeAttendanceWidget',
@@ -209,12 +209,17 @@ export default {
         })
         .then((response) => {
           const {data, meta} = response.data;
+          // Get primary color from theme CSS variable
+          const primaryColor =
+            getComputedStyle(document.documentElement)
+              .getPropertyValue('--oxd-primary-one-color')
+              .trim() || '#28A848';
           this.dataset = data.map((item) => ({
             value: item.totalTime.hours + item.totalTime.minutes / 60,
             label: this.$t(
               `general.${new String(item.workDay.day).toLowerCase()}`,
             ),
-            color: CHART_COLORS.COLOR_HEAT_WAVE,
+            color: primaryColor,
           }));
 
           const {lastAction, currentDay, currentWeek, currentUser} = meta;

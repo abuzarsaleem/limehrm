@@ -470,7 +470,7 @@ class Migration extends AbstractMigration
             ->where('ohrm_theme.theme_name = :themeName')
             ->setParameter(
                 'variables',
-                '{"primaryColor":"#FF7B1D","primaryFontColor":"#FFFFFF","secondaryColor":"#76BC21","secondaryFontColor":"#FFFFFF","primaryGradientStartColor":"#FF920B","primaryGradientEndColor":"#F35C17"}'
+                '{"primaryColor":"#28A848","primaryFontColor":"#FFFFFF","secondaryColor":"#76BC21","secondaryFontColor":"#FFFFFF","primaryGradientStartColor":"#28A848","primaryGradientEndColor":"#06562C"}'
             )
             ->setParameter('themeName', 'default')
             ->executeQuery();
