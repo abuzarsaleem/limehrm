@@ -31,6 +31,7 @@ use OrangeHRM\Time\Dto\DefaultTimesheetSearchFilterParams;
 use OrangeHRM\Time\Dto\EmployeeReportsSearchFilterParams;
 use OrangeHRM\Time\Dto\EmployeeTimesheetListSearchFilterParams;
 use OrangeHRM\Time\Dto\TimesheetActionLogSearchFilterParams;
+use OrangeHRM\Time\Dto\TimesheetReportSearchFilterParams;
 use OrangeHRM\Time\Dto\TimesheetSearchFilterParams;
 use OrangeHRM\Time\Traits\Service\TimesheetServiceTrait;
 
@@ -615,5 +616,139 @@ class TimesheetDao extends BaseDao
             'projectActivity' => $activityId,
             'date' => $date
         ]);
+    }
+
+    /**
+     * @param TimesheetReportSearchFilterParams $filterParams
+     * @return array
+     */
+    public function getTimesheetReportCriteriaList(
+        TimesheetReportSearchFilterParams $filterParams
+    ): array {
+        $paginator = $this->getTimesheetReportPaginator($filterParams);
+        return $paginator->getQuery()->execute();
+    }
+
+    /**
+     * @param TimesheetReportSearchFilterParams $filterParams
+     * @return Paginator
+     */
+    public function getTimesheetReportPaginator(
+        TimesheetReportSearchFilterParams $filterParams
+    ): Paginator {
+        $q = $this->getTimesheetReportQueryBuilderWrapper($filterParams)->getQueryBuilder();
+        // Include entity ID for proper pagination, then add custom fields
+        $q->select(
+            'timesheetItem.id',
+            'CONCAT(employee.firstName, \' \', employee.lastName) AS fullName',
+            'IDENTITY(employee.employeeTerminationRecord) AS terminationId',
+            'employee.empNumber as empNumber',
+            'timesheetItem.date AS date',
+            'project.name AS projectName',
+            'projectActivity.name AS activityName',
+            'COALESCE(timesheetItem.duration, 0) AS duration',
+            'timesheet.state AS status',
+            'timesheetItem.comment AS comment'
+        );
+        return $this->getPaginator($q);
+    }
+
+    /**
+     * @param TimesheetReportSearchFilterParams $filterParams
+     * @return QueryBuilderWrapper
+     */
+    private function getTimesheetReportQueryBuilderWrapper(
+        TimesheetReportSearchFilterParams $filterParams
+    ): QueryBuilderWrapper {
+        $q = $this->createQueryBuilder(TimesheetItem::class, 'timesheetItem');
+        $q->leftJoin('timesheetItem.employee', 'employee');
+        $q->leftJoin('timesheetItem.timesheet', 'timesheet');
+        $q->leftJoin('timesheetItem.project', 'project');
+        $q->leftJoin('timesheetItem.projectActivity', 'projectActivity');
+        $q->leftJoin('employee.jobTitle', 'jobTitle');
+        $q->leftJoin('employee.subDivision', 'subunit');
+        $q->leftJoin('employee.empStatus', 'empStatus');
+
+        $this->setSortingAndPaginationParams($q, $filterParams);
+
+        if (!is_null($filterParams->getEmployeeNumbers())) {
+            $q->andWhere($q->expr()->in('employee.empNumber', ':empNumbers'))
+                ->setParameter('empNumbers', $filterParams->getEmployeeNumbers());
+        }
+
+        if (!is_null($filterParams->getJobTitleId())) {
+            $q->andWhere('jobTitle.id = :jobTitleId')
+                ->setParameter('jobTitleId', $filterParams->getJobTitleId());
+        }
+
+        if (!is_null($filterParams->getSubUnitId())) {
+            $q->andWhere($q->expr()->in('subunit.id', ':subunitIds'))
+                ->setParameter('subunitIds', $filterParams->getSubunitIdChain());
+        }
+
+        if (!is_null($filterParams->getEmploymentStatusId())) {
+            $q->andWhere('empStatus.id = :empStatusId')
+                ->setParameter('empStatusId', $filterParams->getEmploymentStatusId());
+        }
+
+        if (!is_null($filterParams->getProjectId())) {
+            $q->andWhere('timesheetItem.project = :projectId')
+                ->setParameter('projectId', $filterParams->getProjectId());
+        }
+
+        if (!is_null($filterParams->getActivityId())) {
+            $q->andWhere('timesheetItem.projectActivity = :activityId')
+                ->setParameter('activityId', $filterParams->getActivityId());
+        }
+
+        // Timesheet items after fromDate (including fromDate) and Timesheet items before toDate (including toDate)
+        if (!is_null($filterParams->getFromDate()) && !is_null($filterParams->getToDate())) {
+            $q->andWhere($q->expr()->between('timesheetItem.date', ':fromDate', ':toDate'));
+            $q->setParameter('fromDate', $filterParams->getFromDate());
+            $q->setParameter('toDate', $filterParams->getToDate());
+        }
+        // Timesheet items after fromDate (including fromDate)
+        elseif (!is_null($filterParams->getFromDate())) {
+            $q->andWhere($q->expr()->gte('timesheetItem.date', ':fromDate'));
+            $q->setParameter('fromDate', $filterParams->getFromDate());
+        }
+        // Timesheet items before toDate (including toDate)
+        elseif (!is_null($filterParams->getToDate())) {
+            $q->andWhere($q->expr()->lte('timesheetItem.date', ':toDate'));
+            $q->setParameter('toDate', $filterParams->getToDate());
+        }
+
+        if ($filterParams->getIncludeTimesheets() === TimesheetReportSearchFilterParams::INCLUDE_TIMESHEETS_APPROVED_ONLY) {
+            $q->andWhere('timesheet.state = :state');
+            $q->setParameter('state', TimesheetReportSearchFilterParams::TIMESHEET_APPROVED_STATE);
+        }
+
+        return $this->getQueryBuilderWrapper($q);
+    }
+
+    /**
+     * @param TimesheetReportSearchFilterParams $filterParams
+     * @return int
+     */
+    public function getTimesheetReportCriteriaListCount(
+        TimesheetReportSearchFilterParams $filterParams
+    ): int {
+        // Create a separate count query without custom selects to avoid Doctrine ORM issues
+        $q = $this->getTimesheetReportQueryBuilderWrapper($filterParams)->getQueryBuilder();
+        // Reset select to use entity identifier for proper counting
+        $q->select('COUNT(DISTINCT timesheetItem.id)');
+        return (int)$q->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * @param TimesheetReportSearchFilterParams $filterParams
+     * @return int
+     */
+    public function getTotalTimesheetDuration(
+        TimesheetReportSearchFilterParams $filterParams
+    ): int {
+        $qb = $this->getTimesheetReportQueryBuilderWrapper($filterParams)->getQueryBuilder();
+        $qb->select('COALESCE(SUM(timesheetItem.duration), 0) AS totalDuration');
+        return $qb->getQuery()->getSingleScalarResult();
     }
 }

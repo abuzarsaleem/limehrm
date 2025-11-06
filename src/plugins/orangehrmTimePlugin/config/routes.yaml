@@ -274,3 +274,8 @@ time_activity_details_report:
   path: /time/displayProjectActivityDetailsReport
   controller: OrangeHRM\Time\Controller\ActivityDetailsReportController::handle
   methods: [ GET ]
+
+time_timesheet_report:
+  path: /time/displayTimesheetReportCriteria
+  controller: OrangeHRM\Time\Controller\TimesheetReportController::handle
+  methods: [ GET ]
