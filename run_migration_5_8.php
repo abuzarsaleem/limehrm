@@ -10,10 +10,16 @@
 require_once __DIR__ . '/src/vendor/autoload.php';
 
 use OrangeHRM\Config\Config;
-use OrangeHRM\Installer\Util\Connection;
 use OrangeHRM\Installer\Migration\V5_8_0\Migration;
 use OrangeHRM\Installer\Util\MigrationHelper;
-use OrangeHRM\Installer\Util\AppSetupUtility;
+use OrangeHRM\Installer\Util\ConfigHelper;
+use OrangeHRM\Installer\Framework\HttpKernel;
+use OrangeHRM\Framework\Http\Session\MemorySessionStorage;
+use OrangeHRM\Framework\Http\Session\Session;
+use OrangeHRM\Framework\ServiceContainer;
+use OrangeHRM\Framework\Services;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Types\Types;
 
 // Check if system is installed
 if (!Config::isInstalled()) {
@@ -23,8 +29,31 @@ if (!Config::isInstalled()) {
 try {
     echo "=== Running Migration 5.8.0 ===\n\n";
     
-    // Get connection
-    $connection = Connection::getConnection();
+    // Initialize framework (required for installer utilities)
+    new HttpKernel('prod', false);
+    $sessionStorage = new MemorySessionStorage();
+    ServiceContainer::getContainer()->set(Services::SESSION_STORAGE, $sessionStorage);
+    $session = new Session($sessionStorage);
+    $session->start();
+    ServiceContainer::getContainer()->set(Services::SESSION, $session);
+    echo "✓ Framework initialized\n";
+    
+    // Get database connection from installed system
+    $conf = Config::getConf();
+    echo "✓ Loaded database configuration\n";
+    
+    // Initialize StateContainer with DB info for installer Connection class
+    $stateContainer = \OrangeHRM\Installer\Util\StateContainer::getInstance();
+    $stateContainer->storeDbInfo(
+        $conf->getDbHost(),
+        $conf->getDbPort(),
+        new \OrangeHRM\Authentication\Dto\UserCredential($conf->getDbUser(), $conf->getDbPass()),
+        $conf->getDbName()
+    );
+    
+    // Get connection using installer Connection class
+    \OrangeHRM\Installer\Util\Connection::reset();
+    $connection = \OrangeHRM\Installer\Util\Connection::getConnection();
     echo "✓ Database connection established\n";
     
     // Create migration helper
@@ -42,7 +71,7 @@ try {
     $migration->up();
     
     // Update version in config
-    $configHelper = new \OrangeHRM\Installer\Util\ConfigHelper();
+    $configHelper = new ConfigHelper();
     $configHelper->setConfigValue('instance.version', '5.8.0');
     echo "✓ Updated instance version to 5.8.0\n";
     
