@@ -1,0 +1,8 @@
+'Timesheet Report':
+  module: time
+  url: displayTimesheetReportCriteria
+  permissions:
+    - { role: Admin, permission: { read: true } }
+    - { role: Supervisor, permission: { read: true } }
+    - { role: ESS, permission: { read: true } }
+
